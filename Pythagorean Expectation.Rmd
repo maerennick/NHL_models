@@ -1,0 +1,443 @@
+---
+title: "Pythagorean Expectation_ NHL"
+author: "Mae Rennick"
+date: "2023-08-28"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: yeti
+    highlight: tango
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+A Pythagorean expectation is a statistic used to measure how many wins a team should expect, based on how many points they score and how many they allow.
+
+THis investigation delves into the insights offered by the 2022 season's data, revealing the close correlation between points metrics and actual performance. This analysis uncovers teams that exceeded or fell short of projected outcomes, exposing the factors contributing to these deviations. By focusing on Pythagorean Expectation, enthusiasts can uncover the underlying dynamics that impact a team's success, providing a fresh and insightful perspective on the world of sports.
+
+
+
+```{r setup, include=FALSE, warning= FALSE, message= FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning= FALSE, message= FALSE)
+
+# Packages ----
+library(tidyverse)    # For data manipulation, plotting, etc. 
+library(here)    # For reproducible data importation 
+library(janitor)      # For text data manipulation
+library(psych)
+
+```
+
+
+```{r}
+### Data
+
+shots_2007<- read_csv(here("MP_data", "CAN_shots_2007.csv"))
+shots_2008<- read_csv(here("MP_data", "CAN_shots_2008.csv"))
+shots_2009<- read_csv(here("MP_data", "CAN_shots_2009.csv"))
+shots_2010<- read_csv(here("MP_data", "CAN_shots_2010.csv"))
+shots_2011<- read_csv(here("MP_data", "CAN_shots_2011.csv"))
+shots_2012<- read_csv(here("MP_data", "CAN_shots_2012.csv"))
+shots_2013<- read_csv(here("MP_data", "CAN_shots_2013.csv"))
+shots_2014<- read_csv(here("MP_data", "CAN_shots_2014.csv"))
+shots_2015<- read_csv(here("MP_data", "CAN_shots_2015.csv"))
+shots_2016<- read_csv(here("MP_data", "CAN_shots_2016.csv"))
+shots_2017<- read_csv(here("MP_data", "CAN_shots_2017.csv"))
+shots_2018<- read_csv(here("MP_data", "CAN_shots_2018.csv"))
+shots_2019<- read_csv(here("MP_data", "CAN_shots_2019.csv"))
+shots_2020<- read_csv(here("MP_data", "CAN_shots_2020.csv"))[, colnames(shots_2019)]
+shots_2021<- read_csv(here("MP_data", "CAN_shots_2021.csv"))
+shots_2022<- read_csv(here("MP_data", "CAN_shots_2022.csv"))
+
+shot_data<- rbind(shots_2009, shots_2010, shots_2011, shots_2012, shots_2013, shots_2014, shots_2015, shots_2016, shots_2017, shots_2018, shots_2019, shots_2020, shots_2021, shots_2022)
+
+```
+
+### Pythagorean Expectation for the 2022 season 
+
+```{r}
+
+## What we need in the data frame: 
+
+# identity of team 
+# points scored
+# poitns scored against them
+# aggregate of thos values across the entire season 
+
+pe_nhl<- shot_data %>% 
+  filter(season == 2022) %>% 
+  clean_names() %>% 
+  select(home_team_code, away_team_code, home_team_goals, away_team_goals, game_id)
+
+## variable where 1 --> if home team won the game and 0 --> if away team didnt win the game 
+
+pe_nhl_score<- pe_nhl %>% 
+  group_by(game_id) %>% 
+  mutate(hwin = case_when (sum(home_team_goals)> sum(away_team_goals) ~ 1,
+                           sum(away_team_goals)>sum(home_team_goals)  ~ 0)) %>% 
+  mutate(awin = case_when (sum(home_team_goals)< sum(away_team_goals) ~ 1,
+                           sum(away_team_goals)<sum(home_team_goals)  ~ 0)) %>% 
+  mutate(count =1)
+
+
+### aggregation 
+
+nhl_home<- pe_nhl_score %>% ### record of the team as a home team
+group_by(home_team_code) %>% 
+  summarise(hwin = sum(hwin),
+            home_team_goals = sum(home_team_goals),
+            away_team_goals = sum(away_team_goals),
+            count = sum(count)) %>%
+  rename(team = home_team_code, away_team_goals_h = away_team_goals, home_team_goals_h = home_team_goals, Gh = count)
+
+nhl_away<- pe_nhl_score %>% ### record of the team as an away team 
+  group_by(away_team_code) %>% 
+  summarise(awin = sum(awin),
+            home_team_goals = sum(home_team_goals),
+            away_team_goals = sum(away_team_goals),
+            count = sum(count)) %>%
+  rename(team = away_team_code, away_team_goals_a = away_team_goals, home_team_goals_a = home_team_goals, Ga = count)
+
+
+NHL22 <- merge(nhl_home, nhl_away, by = "team")
+
+
+# Now we create the total wins, games, played, runs scored and run conceded by summing the totals as home team and away team
+
+
+NHL22$W <- NHL22$hwin + NHL22$awin
+NHL22$G <- NHL22$Gh + NHL22$Ga
+NHL22$R <- NHL22$home_team_goals_h + NHL22$away_team_goals_a
+NHL22$RA <- NHL22$away_team_goals_h + NHL22$home_team_goals_a
+#NHL22
+
+#define win percentage and the Pythagorean Expectation
+
+NHL22$wpc <- NHL22$W / NHL22$G
+NHL22$pyth <- NHL22$R^2 / (NHL22$R^2 + NHL22$RA^2)
+#NHL22
+
+
+## regression
+
+pyth_lm <- lm(wpc ~ pyth, data = NHL22)
+summary(pyth_lm)
+
+
+
+```
+
+
+wpc = Intercept + coef x pyth
+
+- For every one unit increase in pyth, the value of wpc goes up by 1.33
+- Pythagorean Expectation can account for 81.5% of the variation in win percentage
+
+
+```{r}
+
+# Create the linear regression model
+pyth_lm <- lm(wpc ~ pyth, data = NHL22)
+
+# Create a scatter plot with regression line using ggplot2
+regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  theme_minimal()
+
+# Print the plot
+print(regression_plot)
+
+
+
+### comparing teams 
+
+# Create a scatter plot with regression line for each team
+regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc, label = team)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "lightblue") +
+  geom_text_repel(
+    nudge_x = 0.02, nudge_y = 0.005,
+    segment.size = 0.2, segment.color = "grey50"
+  ) +
+  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  theme_minimal()
+
+# Print the plot
+print(regression_plot)
+
+
+```
+
+### PE for all seasons
+
+
+```{r}
+
+## What we need in the data frame: 
+
+# identity of team 
+# points scored
+# poitns scored against them
+# aggregate of thos values across the entire season 
+
+pe_nhl<- shot_data %>% 
+  #filter(season == 2022) %>% 
+  clean_names() %>% 
+  select(home_team_code, away_team_code, home_team_goals, away_team_goals, game_id)
+
+## variable where 1 --> if home team won the game and 0 --> if away team didnt win the game 
+
+pe_nhl_score<- pe_nhl %>% 
+  group_by(game_id) %>% 
+  mutate(hwin = case_when (sum(home_team_goals)> sum(away_team_goals) ~ 1,
+                           sum(away_team_goals)>sum(home_team_goals)  ~ 0)) %>% 
+  mutate(awin = case_when (sum(home_team_goals)< sum(away_team_goals) ~ 1,
+                           sum(away_team_goals)<sum(home_team_goals)  ~ 0)) %>% 
+  mutate(count =1)
+
+
+### aggregation 
+
+nhl_home<- pe_nhl_score %>% ### record of the team as a home team
+group_by(home_team_code) %>% 
+  summarise(hwin = sum(hwin),
+            home_team_goals = sum(home_team_goals),
+            away_team_goals = sum(away_team_goals),
+            count = sum(count)) %>%
+  rename(team = home_team_code, away_team_goals_h = away_team_goals, home_team_goals_h = home_team_goals, Gh = count)
+
+nhl_away<- pe_nhl_score %>% ### record of the team as an away team 
+  group_by(away_team_code) %>% 
+  summarise(awin = sum(awin),
+            home_team_goals = sum(home_team_goals),
+            away_team_goals = sum(away_team_goals),
+            count = sum(count)) %>%
+  rename(team = away_team_code, away_team_goals_a = away_team_goals, home_team_goals_a = home_team_goals, Ga = count)
+
+
+NHL22 <- merge(nhl_home, nhl_away, by = "team")
+
+
+# Now we create the total wins, games, played, runs scored and run conceded by summing the totals as home team and away team
+
+
+NHL22$W <- NHL22$hwin + NHL22$awin
+NHL22$G <- NHL22$Gh + NHL22$Ga
+NHL22$R <- NHL22$home_team_goals_h + NHL22$away_team_goals_a
+NHL22$RA <- NHL22$away_team_goals_h + NHL22$home_team_goals_a
+#NHL22
+
+#define win percentage and the Pythagorean Expectation
+
+NHL22$wpc <- NHL22$W / NHL22$G
+NHL22$pyth <- NHL22$R^2 / (NHL22$R^2 + NHL22$RA^2)
+#NHL22
+
+
+## regression
+
+pyth_lm <- lm(wpc ~ pyth, data = NHL22)
+summary(pyth_lm)
+
+
+
+```
+
+
+wpc = Intercept + coef x pyth
+
+- For every one unit increase in pyth, the value of wpc goes up by 1.15
+- Pythagorean Expectation can account for 80.0% of the variation in win percentage
+
+
+```{r}
+
+# Create the linear regression model
+pyth_lm <- lm(wpc ~ pyth, data = NHL22)
+
+# Create a scatter plot with regression line using ggplot2
+regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "navyblue") +
+  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  theme_minimal()
+
+# Print the plot
+print(regression_plot)
+
+
+
+### comparing teams 
+
+# Create a scatter plot with regression line for each team
+regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc, label = team)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "skyblue") +
+  geom_text_repel(
+    nudge_x = 0.02, nudge_y = 0.005,
+    segment.size = 0.2, segment.color = "grey50"
+  ) +
+  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  theme_minimal()
+
+# Print the plot
+print(regression_plot)
+
+
+```
+
+
+### Forecasting
+
+One of the main reasons that people are interested in sports analytics is that they want to predict the outcome of events that have not yet occurred. Thus we want to go beyond "explanation" - finding the model that best fits the data (i.e. history) and to use our model to forecast the outcome of games in the future.
+Pythagorean Expectation can be thought of as a forecast. At any point in the season, it can be calculated based on the games already played. Using it as a forecast would amount to saying that from that point onward the win percentage of the team would equal the Pythagorean Expectation to date.
+In this notebook, we're going to see if it is a good forecasting model in the context of the NHL data we examined earlier. 
+
+```{r}
+
+# Create a subset of NHL22 data frame containing selected columns
+nhl_home_c <- pe_nhl_score[c('home_team_code', 'home_team_goals', 'away_team_goals', 'count', 'game_id')]
+
+# Add a new column 'home' with value 1
+nhl_home_c$home <- 1
+# Rename columns
+colnames(nhl_home_c) <- c('team', 'R', 'RA', 'count', 'game_id')
+
+
+# Create a subset of NHL22 data frame containing selected columns
+nhl_away_c <- pe_nhl_score[c('away_team_code', 'away_team_goals', 'home_team_goals', 'count', 'game_id')]
+
+# Add a new column 'home' with value 1
+nhl_away_c$home <- 0
+# Rename columns
+colnames(nhl_away_c) <- c('team', 'R', 'RA', 'count', 'game_id')
+
+
+NHL22_c <- rbind(nhl_home_c, nhl_away_c) %>% 
+  select(-'...6')
+  
+### define a win
+
+NHL22_c$win <- ifelse(NHL22_c$R > NHL22_c$RA, 1, 0)
+
+
+### split data 
+
+# Generate a random vector of indices to split the data frame
+split_indices <- sample(nrow(NHL22_c), nrow(NHL22_c) / 2)
+
+# Create the first half
+Half1 <- NHL22_c[split_indices, ]
+describe(Half1)
+
+# Create the second half
+Half2 <- NHL22_c[-split_indices, ]
+describe(Half2)
+
+
+# Group by 'team' and summarize data for the first half of the season
+Half1perf <- Half1 %>%
+  group_by(team) %>%
+  summarize(count1 = sum(count),
+            win1 = sum(win),
+            R1 = sum(R),
+            RA1 = sum(RA)) %>%
+  ungroup() %>%
+  rename(count = count1, win = win1, R = R1, RA = RA1)
+
+# Calculate win percentage and Pythagorean Expectation for the first half of the season
+Half1perf <- Half1perf %>%
+  mutate(wpc1 = win / count,
+         pyth1 = R^2 / (R^2 + RA^2))
+
+# Group by 'team' and summarize data for the second half of the season
+Half2perf <- Half2 %>%
+  group_by(team) %>%
+  summarize(count2 = sum(count),
+            win2 = sum(win),
+            R2 = sum(R),
+            RA2 = sum(RA)) %>%
+  ungroup() %>%
+  rename(count = count2, win = win2, R = R2, RA = RA2)
+
+# Calculate win percentage and Pythagorean Expectation for the second half of the season
+Half2perf <- Half2perf %>%
+  mutate(wpc2 = win / count,
+         pyth2 = R^2 / (R^2 + RA^2))
+
+
+# Merge the two data frames on the 'team' column
+Half2predictor <- merge(Half1perf, Half2perf, by = "team")
+
+# Create a scatter plot
+scatter_plot <- ggplot(data = Half2predictor, aes(x = pyth1, y = wpc2)) +
+  geom_point(color = "#1f77b4", size = 4, alpha = 0.7) +
+  theme_minimal() +
+  labs(x = "Pythagorean Expectation (First Half)",
+       y = "Win Percentage (Second Half)",
+       title = "Pythagorean Expectation vs. Win Percentage") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+# Display the scatter plot
+print(scatter_plot)
+
+
+## create a scatter plot comparing win percentage from the first half of the season against win percentage in the second half of the season
+
+# Create a scatter plot
+scatter_plot <- ggplot(data = Half2predictor, aes(x = wpc1, y = wpc2)) +
+  geom_point(color = "#1f77b4", size = 4, alpha = 0.7) +
+  theme_minimal() +
+  labs(x = "Win Percentage (First Half)",
+       y = "Win Percentage (Second Half)",
+       title = "Win Percentage Comparison") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Display the scatter plot
+print(scatter_plot)
+
+
+# The two plots look similar
+# We can be more precise still if we compare the correlation coefficients. The first row of the table shows the 
+# correlation of win percentage in second half of the season against itself, win percentage in the first half of the season,
+# Pythagorean Expectation in the first half of the season, and Pythagorean Expectation in the second half of the season.
+# Our focus is on comparing the second and third columns.
+
+# Extract the relevant columns
+keyvars <- Half2predictor[c('team', 'wpc2', 'wpc1', 'pyth1', 'pyth2')]
+
+# Calculate the correlation coefficients
+correlation_matrix <- cor(keyvars[, c('wpc2', 'wpc1', 'pyth1', 'pyth2')])
+
+# Print the correlation matrix
+print(correlation_matrix)
+
+# We can also sort the variables to show for each club how close the relationships are between the first and second half
+# of the season
+
+# Sort the data frame by 'wpc2' column in descending order
+keyvars <- keyvars %>%
+  arrange(desc(wpc2))
+
+# Print the sorted keyvars data frame
+print(keyvars)
+
+keyvars_ext<-keyvars %>% 
+  mutate(difference = (wpc2-wpc1)*100)
+
+```
+
+
+#### Conclusion
+
+We can see from the correlation matrix that win percentage for the second half of games is correlated with win percentage in the first half of games - the correlation coefficient is +0.983. That is a heavy correlation and suggests that the first half of games is highly predictive of the second half of games. Pythagorean Expectation is slightly less effective at forecasting - the correlation coefficient is lower, at +0.960. Though, the difference between predictor variables is not large. 
+
+When we sort the teams from highest to lowest send half of season win percentage, we find a mixed picture. Some clubs perform with less than one percentage point difference in each half, e.g. The ATL (Atlanta Thrashers), ARI (Arizona Coyotes), MIN (Minnesota Wild), while others differed up to 6 percentage points, e.g. BUF (Buffalo Sabres), and VGK (Vegas Golden Knights).
+
+ 
+
