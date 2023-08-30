@@ -1,7 +1,6 @@
 ---
 title: "PCA analysis"
 author: "Mae Rennick"
-date: "2023-08-28"
 output: 
   html_document:
     toc: true
