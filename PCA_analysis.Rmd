@@ -34,9 +34,36 @@ library(ggrepel)
  
 The analysis conducted in the R notebook, inspired by the work of Toumi (2018), delves into the realm of data visualization using the R programming language. Drawing from the insights shared in Toumi's work on "R for data visualization," the notebook likely encompasses a comprehensive exploration of various techniques and libraries available in R for creating impactful and informative visual representations of data. Whether focusing on basic charts or advanced graphical displays, the analysis likely showcases the versatility of R's visualization capabilities. With the provided citation serving as a foundational reference, the notebook is expected to empower data analysts and researchers with the tools to effectively communicate their findings through compelling visuals, ultimately aiding in clearer understanding and decision-making processes. 
 
+### Heatmapping
+
+Statistics analyzed: 
+
+1. **CF% (Corsi For Percentage):** the percentage of shot attempts (shots on goal, missed shots, and blocked shots) taken by a team while a particular player or team is on the ice. A high CF% indicates that a player or team is controlling play and generating more shot attempts than they are giving up.
+
+2. **CF/60 (Corsi For per 60 minutes):** the average number of shot attempts (shots on goal, missed shots, and blocked shots) a player or team generates per 60 minutes of ice time.
+
+3. **CA/60 (Corsi Against per 60 minutes):** the average number of shot attempts (shots on goal, missed shots, and blocked shots) a player or team gives up per 60 minutes of ice time.
+
+4. **GF% (Goals For Percentage):** the percentage of goals scored by a team while a particular player or team is on the ice. A high GF% indicates that a player or team is contributing to more goals being scored compared to the goals they are conceding.
+
+5. **GF/60 (Goals For per 60 minutes):** the average number of goals scored by a player or team per 60 minutes of ice time.
+
+6. **GA/60 (Goals Against per 60 minutes):** the average number of goals conceded by a player or team per 60 minutes of ice time.
+
+7. **xGF% (Expected Goals For Percentage):** the probability of a team scoring goals based on the quality of shot attempts (location, type of shot, etc.) generated while a particular player or team is on the ice.
+
+8. **xGF/60 (Expected Goals For per 60 minutes):** the average expected number of goals a player or team would score per 60 minutes of ice time based on the quality of shot attempts.
+
+9. **xGA/60 (Expected Goals Against per 60 minutes):** the average expected number of goals a player or team would concede per 60 minutes of ice time based on the quality of shot attempts against.
+
+10. **Sh% (Shooting Percentage):** the percentage of shots on goal that result in goals. It measures the efficiency of a player or team's shooting.
+
+11. **Sv% (Save Percentage):**  percentage of shots on goal that a goaltender stops, indicating their efficiency in preventing goals.
+
+12. **PDO:** a combination of a team's shooting percentage (Sh%) and its goaltender's save percentage (Sv%). It's often used as a luck indicator, as extremely high or low PDO values tend to regress toward the mean over time.
+
+
 ```{r}
-
-
 
 ###Import data
 teams <- read_csv(here("MIT_sloan_data", "nhl_teams_data_mit.csv"))
@@ -74,6 +101,14 @@ heatmap <- d3heatmap(team_matrix, colors = "Blues", scale = "col",
 heatmap
 
 
+
+```
+
+
+
+### PCA Analysis
+
+```{r}
 #########################PCA CLUSTERING#######################################
 
 
