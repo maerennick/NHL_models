@@ -1,5 +1,5 @@
 ---
-title: "Rink Drawing"
+title: "DAY 5: Rink Drawing"
 author: "Mae Rennick"
 output: 
   html_document:
