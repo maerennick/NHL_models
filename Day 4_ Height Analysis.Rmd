@@ -70,8 +70,8 @@ mean_height_df <- heights %>% group_by(Year_Int) %>%
 
 
 plot_2 <- ggplot(mean_height_df, aes(x = Year_Int, y = Ht)) +
-  geom_point(size = 2, color = red[9], alpha = 0.75) +
-  stat_smooth(method = "lm", size = 1, color = red[11]) +
+  geom_point(size = 2, color = "blue", alpha = 0.75) +
+  stat_smooth(method = "lm", size = 1, color = "black") +
   ylab("Height, cm") +
   xlab("Year") +
   labs(title = "NHL Player Mean Height", 
@@ -98,7 +98,7 @@ plot_2
 ##all players, plot 2
 apb <- ggplot(heights, aes(x = Year_Int, y = Ht))+
   geom_jitter(size = 1, color = "green4", alpha = .08, width = .05)+
-  stat_smooth(method = "lm", size = 1, se = F, color = black[11])+
+  stat_smooth(method = "lm", size = 1, se = F, color = "black")+
   labs(title = "NHL Player Height since 1917",
        subtitle = "Data: hockey-reference") +
   scale_x_continuous(breaks = seq(1918, 2018, 20), labels = seq(1918, 2018, 20))+
@@ -117,7 +117,7 @@ goalies <- tbl_df(goalies)
 ###Plot goalies
 g <- ggplot(goalies, aes(x = Year_Int, y = Ht)) +
   geom_jitter(size = 1, color = "lightblue", alpha = .15, width = .05) +
-  geom_smooth(method = "lm", color = black[11], size = 1) +
+  geom_smooth(method = "lm", color = "black", size = 1) +
   labs(title = "Goalies") +
   scale_x_continuous(breaks = seq(1918, 2018, 20), labels = seq(1918, 2018, 20)) +
   theme_fivethirtyeight()
@@ -133,7 +133,7 @@ forwards <- tbl_df(forwards)
 ###Plot forwards
 f <- ggplot(forwards, aes(x = Year_Int, y = Ht)) +
   geom_jitter(size = 1, color = "darkblue", alpha = .15, width = .05) +
-  geom_smooth(method = "lm", color = black[11], size = 1) +
+  geom_smooth(method = "lm", color = "black", size = 1) +
   labs(title = "Forwards") +
   scale_x_continuous(breaks = seq(1918, 2018, 20), labels = seq(1918, 2018, 20)) +
   theme_fivethirtyeight()
@@ -149,7 +149,7 @@ defensemen <- tbl_df(defensemen)
 ###Plot
 d <- ggplot(defensemen, aes(x = Year_Int, y = Ht)) +
   geom_jitter(size = 1, color = "blue", alpha = .15, width = .05) +
-  geom_smooth(method = "lm", color = black[11], size = 1) +
+  geom_smooth(method = "lm", color = "black", size = 1) +
   labs(title = "Defensemen") +
   scale_x_continuous(breaks = seq(1918, 2018, 20), labels = seq(1918, 2018, 20)) +
   theme_fivethirtyeight()

@@ -164,3 +164,83 @@ pcaplot + geom_text_repel(aes(y = Comp.2 + 0.009, label = rownames(team_name_dat
 
 ```
 
+```{r}
+# ... (PCA analysis and clustering)
+
+# Scree Plot with labels
+plot(pca_teams, type = "l", main = "Scree Plot - Explained Variance")
+text(1:ncol(teams), pca_teams$sdev^2, labels = round(pca_teams$sdev^2, 2), pos = 3)
+
+# Enhanced Dendrogram
+plot(teamsHC, main = "Dendrogram - Team Clusters")
+
+# Enhanced PCA Scatter Plot
+pcaplot <- ggplot(teams_df, aes(x = Comp.1, y = Comp.2, color = cluster)) +
+  theme_minimal() +
+  geom_hline(yintercept = 0, color = "gray70") +
+  geom_vline(xintercept = 0, color = "gray70") +
+  geom_point(alpha = 0.7, size = 3) +
+  xlim(-5, 6) +
+  labs(x = "PC1", y = "PC2", 
+       title = "PCA Clusters from Hierarchical Clustering of NHL Teams", 
+       subtitle = "Data: corsica.hockey")
+
+# Add team labels with ggrepel to prevent overlap
+library(ggrepel)
+pcaplot <- pcaplot + geom_text_repel(aes(label = rownames(team_name_data)))
+
+pcaplot
+
+```
+
+
+
+The teams within each cluster exhibit similar performance characteristics.
+
+
+The scree plot indicates that the first two principal components capture a significant portion of the variance in the data. This suggests that a two-dimensional representation is informative for distinguishing between teams based on these metrics.
+
+```{r}
+
+### Team Labels on Dendrogram
+
+# Create a list of labels with team names
+label_names <- rownames(team_name_data)
+
+# Plot dendrogram with labeled leaves
+plot(teamsHC, main = "Dendrogram with Labeled Leaves", labels = label_names)
+
+
+# Calculate mean metrics for each cluster
+cluster_mean_metrics <- teams_df %>%
+  group_by(cluster) %>%
+  summarize_all(mean)
+
+# Melt the data for easier plotting
+cluster_mean_metrics_melted <- melt(cluster_mean_metrics, id.vars = "cluster", variable.name = "metric", value.name = "mean_value")
+
+# Create a bar plot showing mean metrics for each cluster
+cluster_metrics_plot <- ggplot(cluster_mean_metrics_melted, aes(x = metric, y = mean_value, fill = factor(cluster))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  labs(x = "Metrics", y = "Mean Value", title = "Mean Metrics for Each Cluster") +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+cluster_metrics_plot
+
+# Calculate within-cluster variability using the standard deviation of each principal component within each cluster
+within_cluster_variability <- teams_df %>%
+  group_by(cluster) %>%
+  summarize(sd_comp1 = sd(Comp.1), sd_comp2 = sd(Comp.2))
+
+# Create a scatter plot to visualize within-cluster variability
+within_cluster_variability_plot <- ggplot(within_cluster_variability, aes(x = sd_comp1, y = sd_comp2, color = factor(cluster))) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(x = "Standard Deviation of PC1", y = "Standard Deviation of PC2", title = "Within-Cluster Variability in PCA Space") +
+  theme_minimal()
+
+within_cluster_variability_plot
+
+
+```
+

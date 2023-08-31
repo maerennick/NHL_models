@@ -291,3 +291,89 @@ CAN_wPAR.Final<- wPAR.Final %>%
 
 ```
 
+
+### Visualizations
+
+```{r}
+
+library(ggplot2)
+
+ggplot(data = CAN_wPAR.Final, aes(x = Season, y = wPAR)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Career wPAR Over Time for Canucks Players",
+       x = "Season",
+       y = "wPAR")
+
+
+ggplot(data = CAN_wPAR.Final, aes(x = Position.N, y = wPAR)) +
+  geom_bar(stat = "summary", fun = "mean", fill = "steelblue") +
+  labs(title = "Average wPAR by Position for Canucks Players",
+       x = "Position",
+       y = "Average wPAR")
+
+ggplot(data = CAN_wPAR.Final, aes(x = Total.TOI /GP, y = wPAR, color = Position.N)) +
+  geom_point() +
+  labs(title = "wPAR vs. Total TOI Rate for Canucks Players",
+       x = "Total TOI Rate",
+       y = "wPAR")
+
+
+ggplot(data = CAN_wPAR.Final, aes(x = wPAR, fill = Position.N)) +
+  geom_histogram(binwidth = 5, position = "dodge") +
+  facet_wrap(~ Position.N, ncol = 2) +
+  labs(title = "Distribution of wPAR by Position for Canucks Players",
+       x = "wPAR",
+       y = "Frequency")
+
+
+# Mapping positions to labels
+CAN_wPAR.Final$Position.Label <- ifelse(CAN_wPAR.Final$Position.N == "1", "Forward", "Defense")
+
+
+# Mapping positions to colors and labels
+CAN_wPAR.Final$Position.Color <- ifelse(CAN_wPAR.Final$Position.N == "1", "#31809F", "#FB9C6C")
+CAN_wPAR.Final$Position.Label <- ifelse(CAN_wPAR.Final$Position.N == "1", "Forward", "Defense")
+
+canucks_fig<- ggplot(data = CAN_wPAR.Final, aes(x = Total.TOI / GP, y = wPAR, color = Position.Label)) +
+  geom_point() +
+  labs(title = "wPAR vs. Total TOI Rate for Canucks Players",
+       x = "Total TOI Rate",
+       y = "wPAR") +
+  scale_color_manual(values = c("Forward" = "#31809F", "Defense" = "#FB9C6C")) +
+  guides(color = guide_legend(title = "Position")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+# Mapping positions to labels
+CAN_wPAR.Final$Position.Label <- ifelse(CAN_wPAR.Final$Position.N == "1", "Forward", "Defense")
+
+
+# Mapping positions to colors and labels
+wPAR.Final$Position.Color <- ifelse(wPAR.Final$Position.N == "1", "#184D68", "#D55121")
+wPAR.Final$Position.Label <- ifelse(wPAR.Final$Position.N == "1", "Forward", "Defense")
+
+all_figure<- ggplot(data = wPAR.Final, aes(x = Total.TOI / GP, y = wPAR, color = Position.Label)) +
+  geom_point() +
+  labs(title = "wPAR vs. Total TOI Rate for All Players",
+       x = "Total TOI Rate",
+       y = "wPAR") +
+  scale_color_manual(values = c("Forward" = "#184D68", "Defense" = "#D55121")) +
+  guides(color = guide_legend(title = "Position")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+
+# Arrange the figures using cowplot
+plot_grid(all_figure, canucks_fig, ncol = 2)
+
+# Add customization if needed
+final_plot <- plot_grid(all_figure, canucks_fig, ncol = 2) +
+  theme(plot.margin = margin(1, 1, 1, 1, "cm"))  # Adjust margins
+
+
+
+```
+

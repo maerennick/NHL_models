@@ -14,7 +14,17 @@ editor_options:
 
 A Pythagorean expectation is a statistic used to measure how many wins a team should expect, based on how many points they score and how many they allow.
 
-THis investigation delves into the insights offered by the 2022 season's data, revealing the close correlation between points metrics and actual performance. This analysis uncovers teams that exceeded or fell short of projected outcomes, exposing the factors contributing to these deviations. By focusing on Pythagorean Expectation, enthusiasts can uncover the underlying dynamics that impact a team's success, providing a fresh and insightful perspective on the world of sports.
+In this project, we delve into the world of sports analytics by exploring the Pythagorean Expectation as a predictive tool for NHL team performance. Focusing on the 2022-2023 NHL season, we embark on a comprehensive analysis of the Pythagorean Expectation across all teams, and expand our investigation to encompass historical data from previous seasons. The ultimate goal is to assess the efficacy of this model by comparing its predictive capacity between the first and second halves of the ongoing season.
+
+Overview:
+
+Pythagorean Expectation: Derived from the Pythagorean theorem, the Pythagorean Expectation is a formula used in sports analytics to predict a team's win-loss record based on their points scored and allowed. It is a valuable tool for evaluating the efficiency of a team's performance relative to their actual win-loss record.
+
+Data Collection and Analysis: We gather detailed statistics for all NHL teams during the 2022-2023 season, including goals scored, goals allowed, and actual win-loss records. By applying the Pythagorean Expectation formula, we calculate the expected win-loss records for each team and compare them with their actual records. This provides insight into over-performing and under-performing teams in terms of wins and losses.
+
+Historical Context: To understand the consistency of the Pythagorean Expectation across seasons, we extend our analysis to previous NHL seasons. By aggregating data from multiple seasons, we aim to identify trends, outliers, and whether the Pythagorean Expectation remains a relevant predictive tool over time.
+
+Seasonal Dynamics: One key aspect of this project involves assessing whether the Pythagorean Expectation's predictive capacity changes between the first and second halves of the ongoing NHL season. By dividing the season into two parts, we can analyze whether teams' performance becomes more aligned with their expected records as the season progresses.
 
 
 
@@ -26,6 +36,8 @@ library(tidyverse)    # For data manipulation, plotting, etc.
 library(here)    # For reproducible data importation 
 library(janitor)      # For text data manipulation
 library(psych)
+library(ggrepel)
+library(cowplot)
 
 ```
 
@@ -142,9 +154,9 @@ pyth_lm <- lm(wpc ~ pyth, data = NHL22)
 
 # Create a scatter plot with regression line using ggplot2
 regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  geom_point(size=3) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue", size= 1.2) +
+  labs(x = "Pythagorean Expectation", y = "Winning Percentage") +
   theme_minimal()
 
 # Print the plot
@@ -155,18 +167,20 @@ print(regression_plot)
 ### comparing teams 
 
 # Create a scatter plot with regression line for each team
-regression_plot <- ggplot(NHL22, aes(x = pyth, y = wpc, label = team)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "lightblue") +
+regression_plot_teams <- ggplot(NHL22, aes(x = pyth, y = wpc, label = team)) +
+  geom_point(size=3) +
+  geom_smooth(method = "lm", se = FALSE, color = "lightblue", size=1.2) +
   geom_text_repel(
-    nudge_x = 0.02, nudge_y = 0.005,
+    nudge_x = 0.02, nudge_y = 0.0005,
     segment.size = 0.2, segment.color = "grey50"
   ) +
-  labs(x = "Pyth", y = "Winning Percentage", title = "Regression: wpc ~ pyth") +
+  labs(x = "Pythagorean Expectation", y = "Winning Percentage") +
   theme_minimal()
 
 # Print the plot
-print(regression_plot)
+print(regression_plot_teams)
+
+
 
 
 ```
@@ -389,16 +403,15 @@ print(scatter_plot)
 ## create a scatter plot comparing win percentage from the first half of the season against win percentage in the second half of the season
 
 # Create a scatter plot
-scatter_plot <- ggplot(data = Half2predictor, aes(x = wpc1, y = wpc2)) +
+scatter_plot_1 <- ggplot(data = Half2predictor, aes(x = wpc1, y = wpc2)) +
   geom_point(color = "#1f77b4", size = 4, alpha = 0.7) +
   theme_minimal() +
-  labs(x = "Win Percentage (First Half)",
-       y = "Win Percentage (Second Half)",
-       title = "Win Percentage Comparison") +
+  labs(x = "Win% (Fall-Winter)",
+       y = "Win% (Winter-Spring)") +
   theme(plot.title = element_text(hjust = 0.5))
 
 # Display the scatter plot
-print(scatter_plot)
+print(scatter_plot_1)
 
 
 # The two plots look similar
@@ -439,4 +452,41 @@ We can see from the correlation matrix that win percentage for the second half o
 When we sort the teams from highest to lowest send half of season win percentage, we find a mixed picture. Some clubs perform with less than one percentage point difference in each half, e.g. The ATL (Atlanta Thrashers), ARI (Arizona Coyotes), MIN (Minnesota Wild), while others differed up to 6 percentage points, e.g. BUF (Buffalo Sabres), and VGK (Vegas Golden Knights).
 
  
+```{r}
+
+correlation_matrix <- cor(keyvars[, c('wpc2', 'wpc1', 'pyth1', 'pyth2')])
+
+library(reshape2)
+
+correlation_long <- melt(correlation_matrix)
+
+correlation_long
+
+heatmap_plot <- ggplot(correlation_long, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "#699FA1", high = "#C3E5E7") +
+  theme_minimal() +
+  labs()
+
+# Print the heatmap plot
+print(heatmap_plot)
+
+```
+
+```{r}
+
+# Arrange the plots using cowplot
+combined_plot <- plot_grid(
+  plot_grid(heatmap_plot, scatter_plot_1, ncol = 2, labels = c("A", "B")),
+  regression_plot_teams,
+  ncol = 1, nrow = 2,
+  rel_heights = c(1, 2),
+  labels = c("", "C")
+)
+
+# Display the combined plot
+print(combined_plot)
+
+
+```
 
